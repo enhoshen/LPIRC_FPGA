@@ -10,7 +10,7 @@ CROSS_COMPILE = arm-linux-gnueabihf-
 CFLAGS = -g -Wall   -D$(ALT_DEVICE_FAMILY) -I$(HWLIBS_ROOT)/include/$(ALT_DEVICE_FAMILY)   \
 -I$(HWLIBS_ROOT)/include/ 
 LDFLAGS =  -g -Wall 
-CC = $(CROSS_COMPILE)gcc
+CC = $(CROSS_COMPILE)gcc -std=c99
 ARCH= arm
 
 build: $(TARGET)
