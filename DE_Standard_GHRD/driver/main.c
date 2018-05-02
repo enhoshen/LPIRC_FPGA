@@ -9,6 +9,7 @@ refer to user manual chapter 7 for details about the demo
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <string.h>
 #include "hwlib.h"
 #include "socal/socal.h"
 #include "socal/hps.h"
@@ -27,14 +28,15 @@ refer to user manual chapter 7 for details about the demo
 #define SRAM_SIZE  ONCHIP_MEMORY2_0_SIZE_VALUE
 #define SRAM_BW ONCHIP_MEMORY2_0_MEMORY_INFO_MEM_INIT_DATA_WIDTH
 #define SRAM_BASE ONCHIP_MEMORY2_0_BASE
-
+#define u32_s 4
 typedef uint32_t u32;
 typedef enum memdir { D2S, S2D } memdir;
 typedef enum DMAREG{ STATUS=0 , RADDR=1 , WADDR=2, LENGTH =3,CTL=6} DMAREG;
 typedef enum STABIT{ DONE=0,BUSY=1,REOP=2,WEOP=3,LEN=4 } STABIT;
 
-void* virtual_map( void* ,u32);
-void* dma_send(void* , memdir,u32,u32,int );
+
+void* virtual_map( void* ,void*);
+void* dma_send(void* , memdir,u32,u32,u32 );
 
 bool get_bit ( u32 ,int );
 u32 set_bit ( u32 * , int);
@@ -62,38 +64,41 @@ inline u32 set_bit( u32 *x , int pos ){
     return *x |= 1UL << pos ;  
 }
 inline bool get_bit( u32 x, int pos ){
-    x = x>>pos;
-    return x%1;    
+
+    return (x>>pos)%2;    
 }
 inline u32 get_dmareg( void* base , DMAREG reg){
-    return *(u32*)(base+reg);
+    return *(u32*)(base+reg*u32_s);
 }
 inline u32 set_dmareg( void* base , DMAREG reg, u32 patt ){
-   
-        *(u32*)(base+0) = 0;
-
-    return *(u32*)(base+0) = 0;
+    *(u32*)(base+reg*u32_s) = patt;
+    return patt;
 }
-void* virtual_map ( void* VT_BASE,u32 IP_BASE){
+void* virtual_map ( void* VT_BASE,void* IP_BASE){
     return (void*)(VT_BASE + ( ( unsigned long  )( ALT_LWFPGASLVS_OFST + IP_BASE ) & ( unsigned long)( HW_REGS_MASK ) ) );
 }
-void* dma_send(void* VT_BASE, memdir dir,u32 from, u32 to,int range){
-    int DMA_BASE = (dir == D2S)? D2S_BASE : S2D_BASE;
+void* dma_send(void* VT_BASE, memdir dir,u32 from, u32 to,u32 range){
+    void* DMA_BASE = (dir == D2S)? (void*)D2S_BASE : (void*)S2D_BASE;
     void* dma_addr = virtual_map ( VT_BASE, DMA_BASE);
     while( get_bit(get_dmareg(dma_addr,STATUS), DONE) ) ; // pending
-    *(u32 *)(dma_addr+RADDR  )= from;
-    *(u32 *)(dma_addr+WADDR  )=  to;
-    *(u32 *)(dma_addr+LEN    )= range;
-    *(u32 *)(dma_addr+CTL    )= DMAGO;
+    *(u32 *)(dma_addr+u32_s*RADDR  )= from;
+    *(u32 *)(dma_addr+u32_s*WADDR  )=  to;
+    *(u32 *)(dma_addr+u32_s*LENGTH    )= u32_s*range;
+    *(u32 *)(dma_addr+u32_s*CTL    )= DMAGO;
     return dma_addr;
 }
 bool memprint( int* addr, u32 start, u32 range){
     for ( int i = 0 ; i<range; ++i)
-        printf("addr:%d , val:%0x \n", start+i,*(addr+start+i));
+        printf("addr:%d , val:%d \n", start+i,*(addr+start+i)) ;
     return true;
 }
-
-
+/*
+bool memprintvoid( void* addr, u32 start, u32 range){
+    for ( int i = 0 ; i<range; ++i)
+        printf("addr:%d , val:%d \n", start+u32_s*i,(addr+u32_s*(start+i)));
+    return true;
+}
+*/
 int main() {
     
     void *virtual_base;
@@ -103,7 +108,6 @@ int main() {
     int led_mask;
     void *h2p_lw_led_addr;
 
-    printf("%d get_bit test\r\n" , get_bit( 31,  5) );
     // map the address space for the LED registers into user space so we can interact with them.
     // we'll actually map in the entire CSR span of the HPS since we want to access various registers within that span
 
@@ -121,7 +125,6 @@ int main() {
     }
     
     h2p_lw_led_addr=virtual_base + ( ( unsigned long  )( ALT_LWFPGASLVS_OFST + LED_PIO_BASE ) & ( unsigned long)( HW_REGS_MASK ) );
-    
 
     // toggle the LEDs a bit
 
@@ -161,16 +164,15 @@ int main() {
         test_arr[i]=i;
         
     }
-           printf("check point  %0x \r\n",DMA_1_BASE);
+    
     void* sram_base = virtual_map( virtual_base , SRAM_BASE);
-    void* dma0_base = virtual_map( virtual_map  ,DMA_0_BASE);
-    void* dma1_base = virtual_map( virtual_map  ,DMA_1_BASE);
-    printf("check point\r\n");
-    *(u32*)(sram_base+0 )= 301;
-    memprint ( sram_base , 0, 100); 
+    void* dma0_base = virtual_map( virtual_base  ,DMA_0_BASE);
+    void* dma1_base = virtual_map( virtual_base  ,DMA_1_BASE);
+
+    
     set_dmareg( dma0_base , STATUS, 0);
     set_dmareg( dma1_base , STATUS, 0);
-        printf("check point\r\n");   
+  
 
     while( s!= STOP ){
         int start, range;
@@ -180,25 +182,27 @@ int main() {
                 char test ='y';
                 printf("go on? (y/n)");
                 scanf("%c", &test);
-                printf("enter start,range");
+                printf("enter start,range\n");
                 scanf("%d",&start);
+                printf("\n");
                 scanf("%d",&range);
                 if( test == 'y')
-                    dma_send(virtual_base,D2S, (u32)(test_arr+start), (u32)(sram_base+start), range);
-                s= test=='y'? STOP:TRAND2S;
+                    dma_send(virtual_base,D2S, (u32)(test_arr+u32_s*start), (u32)(sram_base+u32_s*start), range);
+                s= test=='y'? TRAND2S : STOP;
             case TRAND2S:
-                printf("Transferring");
-                dma_addr = virtual_map ( virtual_base, D2S_BASE);
-                if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring");
+                dma_addr = virtual_map ( virtual_base, (void*)D2S_BASE);
+                //printf("%0x \n", get_bit(get_dmareg(dma_addr,STATUS), BUSY));
+                if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring %d\n", get_dmareg(dma_addr,LENGTH));
                 if(get_bit(get_dmareg(dma_addr,STATUS),DONE)  ){
+                    printf("check\n");
                     s=TRANS2D;
                     set_dmareg(dma_addr, STATUS,0);
-                    dma_send(virtual_base,S2D, (u32)(sram_base+start), (u32)(test_arr+start), range);
+                    dma_send(virtual_base,S2D, (u32)(sram_base+u32_s*start), (u32)(test_arr+u32_s*start), range);
                 }
                 break;
             case TRANS2D:
-                printf("get data back");
-                dma_addr = virtual_map ( virtual_base , S2D_BASE);
+                printf("get data back\n");
+                dma_addr = virtual_map ( virtual_base , (void*)S2D_BASE);
                 if(get_bit(get_dmareg(dma_addr,STATUS),DONE) ){
                     s=IDLE;
                     set_dmareg(dma_addr, STATUS,0);
@@ -208,6 +212,7 @@ int main() {
             case STOP:
                 break;
         }
+        
     }
     
 
