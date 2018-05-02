@@ -1,3 +1,11 @@
 
 *.flock
 putty.exe
+db/
+incremental_db/
+soc_system/
+documents/~$notes.docx
+documents/~WRL2935.tmp
+.qsys_edit/
+DE_Standard_GHRD/output_files/DE10_Standard_GHRD.map.smsg
+DE_Standard_GHRD/output_files/DE10_Standard_GHRD.map.summary

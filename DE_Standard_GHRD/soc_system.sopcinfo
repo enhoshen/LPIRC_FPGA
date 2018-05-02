@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 17.0 595 (Future versions may contain additional information.) -->
- <!-- 2018.05.01.01:48:44 -->
+ <!-- 2018.05.03.02:38:40 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1525110523</value>
+  <value>1525286319</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -3040,7 +3040,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="writeAddressMap">
    <type>java.lang.String</type>
-   <value><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x0' end='0x1000' /></address-map>]]></value>
+   <value><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x2000' end='0x3000' /></address-map>]]></value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3050,7 +3050,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="writeSlaveAddressWidthMax">
    <type>int</type>
-   <value>12</value>
+   <value>14</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -4238,7 +4238,7 @@ parameters are a RESULT of the module parameters. -->
    <port>
     <name>write_address</name>
     <direction>Output</direction>
-    <width>12</width>
+    <width>14</width>
     <role>address</role>
    </port>
    <port>
@@ -4282,7 +4282,7 @@ parameters are a RESULT of the module parameters. -->
     <moduleName>onchip_memory2_0</moduleName>
     <slaveName>s1</slaveName>
     <name>onchip_memory2_0.s1</name>
-    <baseAddress>0</baseAddress>
+    <baseAddress>8192</baseAddress>
     <span>4096</span>
    </memoryBlock>
   </interface>
@@ -85989,7 +85989,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.CMacro.TIMESTAMP</name>
-   <value>1525110523</value>
+   <value>1525286319</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.compatible</name>
@@ -86009,7 +86009,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.dts.params.timestamp</name>
-   <value>1525110523</value>
+   <value>1525286319</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.vendor</name>
@@ -86025,7 +86025,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="timestamp">
    <type>int</type>
-   <value>1525110523</value>
+   <value>1525286319</value>
    <derived>true</derived>
    <enabled>false</enabled>
    <visible>false</visible>
@@ -97695,7 +97695,7 @@ parameters are a RESULT of the module parameters. -->
   </parameter>
   <parameter name="baseAddress">
    <type>java.math.BigInteger</type>
-   <value>0x0000</value>
+   <value>0x2000</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>

@@ -343,8 +343,8 @@
   <parameter name="readSlaveDataWidthMax" value="256" />
   <parameter name="softresetEnable" value="true" />
   <parameter name="useRegistersForFIFO" value="true" />
-  <parameter name="writeAddressMap"><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x0' end='0x1000' /></address-map>]]></parameter>
-  <parameter name="writeSlaveAddressWidthMax" value="12" />
+  <parameter name="writeAddressMap"><![CDATA[<address-map><slave name='onchip_memory2_0.s1' start='0x2000' end='0x3000' /></address-map>]]></parameter>
+  <parameter name="writeSlaveAddressWidthMax" value="14" />
   <parameter name="writeSlaveDataWidthMax" value="32" />
  </module>
  <module name="dma_1" kind="altera_avalon_dma" version="17.0" enabled="1">
@@ -1221,7 +1221,7 @@
    start="dma_0.write_master"
    end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="baseAddress" value="0x2000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
