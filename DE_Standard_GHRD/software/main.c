@@ -80,6 +80,7 @@ u32* virtual_map ( void* VT_BASE,void* IP_BASE){
 void* dma_send(void* VT_BASE, memdir dir,u32 from, u32 to,u32 range){
     void* DMA_BASE = (dir == D2S)? (void*)D2S_BASE : (void*)S2D_BASE;
     u32* dma_addr = virtual_map ( VT_BASE, DMA_BASE);
+	printf(" to addr : %0x \r\n",to);
     *(u32 *)(dma_addr+RADDR  )= from;
     *(u32 *)(dma_addr+WADDR  )=  to;
     *(u32 *)(dma_addr+LENGTH )= u32_s*range;
@@ -130,7 +131,7 @@ int main() {
     loop_count = 0;
     led_mask = 0x01;
     led_direction = 0; // 0: left to right direction
-    
+    /*
     while( loop_count < 1 ) {
         
         // control led
@@ -152,7 +153,7 @@ int main() {
             }
         }
     
-    } // while
+    } // while */
     typedef enum  { STOP , IDLE, TRAND2S,TRANS2D }state ;
     state s;
     s = IDLE;
@@ -181,22 +182,27 @@ int main() {
                 char test ='y';
                 printf("go on? (y/n)");
                 scanf("%c", &test);
+				s= test=='y'? TRAND2S : STOP;
+				if (s== STOP) break;
                 printf("enter start,range\n");
                 scanf("%d",&start);
                 printf("\n");
                 scanf("%d",&range);
+				dma_addr = virtual_map ( virtual_base, (void*)D2S_BASE);
                 if( test == 'y')
-                    dma_send(virtual_base,D2S, (u32)(test_arr+u32_s*start), (u32)(DMA_0_WRITE_MASTER_ONCHIP_MEMORY2_0_BASE+start), range);
-                s= test=='y'? TRAND2S : STOP;
+                    dma_send(virtual_base,D2S, (u32)(test_arr+start), (u32)(DMA_0_WRITE_MASTER_ONCHIP_MEMORY2_0_BASE+start), range);
+				printf(" STATUS %0x\n", get_dmareg(dma_addr,STATUS));
+				
+                
             case TRAND2S:
                 dma_addr = virtual_map ( virtual_base, (void*)D2S_BASE);
                 //printf("%0x \n", get_bit(get_dmareg(dma_addr,STATUS), BUSY));
-                if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring %0x\n", get_dmareg(dma_addr,LENGTH));
+                //if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring %0x\n", get_dmareg(dma_addr,LENGTH));
                 if(get_bit(get_dmareg(dma_addr,STATUS),DONE)  ){
                     printf("check\n");
                     s=TRANS2D;
                     set_dmareg(dma_addr, STATUS,0);
-                    dma_send(virtual_base,S2D, (u32)(DMA_1_READ_MASTER_ONCHIP_MEMORY2_0_BASE+start), (u32)(test_arr+u32_s*start), range);
+                    dma_send(virtual_base,S2D, (u32)(DMA_1_READ_MASTER_ONCHIP_MEMORY2_0_BASE+start), (u32)(test_arr+start), range);
                 }
                 break;
             case TRANS2D:
