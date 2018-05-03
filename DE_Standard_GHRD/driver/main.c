@@ -35,13 +35,13 @@ typedef enum DMAREG{ STATUS=0 , RADDR=1 , WADDR=2, LENGTH =3,CTL=6} DMAREG;
 typedef enum STABIT{ DONE=0,BUSY=1,REOP=2,WEOP=3,LEN=4 } STABIT;
 
 
-void* virtual_map( void* ,void*);
+u32* virtual_map( void* ,void*);
 void* dma_send(void* , memdir,u32,u32,u32 );
 
 bool get_bit ( u32 ,int );
 u32 set_bit ( u32 * , int);
-u32 get_dmareg( void* base , DMAREG reg);
-u32 set_dmareg( void* base , DMAREG reg, u32 patt );
+u32 get_dmareg( u32* base , DMAREG reg);
+u32 set_dmareg( u32* base , DMAREG reg, u32 patt );
 
 
 #define DMAGO 0x0000009c
@@ -67,24 +67,23 @@ inline bool get_bit( u32 x, int pos ){
 
     return (x>>pos)%2;    
 }
-inline u32 get_dmareg( void* base , DMAREG reg){
-    return *(u32*)(base+reg*u32_s);
+inline u32 get_dmareg( u32* base , DMAREG reg){
+    return *(base+reg);
 }
-inline u32 set_dmareg( void* base , DMAREG reg, u32 patt ){
-    *(u32*)(base+reg*u32_s) = patt;
+inline u32 set_dmareg( u32* base , DMAREG reg, u32 patt ){
+    *(u32*)(base+reg) = patt;
     return patt;
 }
-void* virtual_map ( void* VT_BASE,void* IP_BASE){
-    return (void*)(VT_BASE + ( ( unsigned long  )( ALT_LWFPGASLVS_OFST + IP_BASE ) & ( unsigned long)( HW_REGS_MASK ) ) );
+u32* virtual_map ( void* VT_BASE,void* IP_BASE){
+    return (u32*)(VT_BASE + ( ( unsigned long  )( ALT_LWFPGASLVS_OFST + IP_BASE ) & ( unsigned long)( HW_REGS_MASK ) ) );
 }
 void* dma_send(void* VT_BASE, memdir dir,u32 from, u32 to,u32 range){
     void* DMA_BASE = (dir == D2S)? (void*)D2S_BASE : (void*)S2D_BASE;
-    void* dma_addr = virtual_map ( VT_BASE, DMA_BASE);
-    while( get_bit(get_dmareg(dma_addr,STATUS), DONE) ) ; // pending
-    *(u32 *)(dma_addr+u32_s*RADDR  )= from;
-    *(u32 *)(dma_addr+u32_s*WADDR  )=  to;
-    *(u32 *)(dma_addr+u32_s*LENGTH    )= u32_s*range;
-    *(u32 *)(dma_addr+u32_s*CTL    )= DMAGO;
+    u32* dma_addr = virtual_map ( VT_BASE, DMA_BASE);
+    *(u32 *)(dma_addr+RADDR  )= from;
+    *(u32 *)(dma_addr+WADDR  )=  to;
+    *(u32 *)(dma_addr+LENGTH )= u32_s*range;
+    *(u32 *)(dma_addr+CTL    )= DMAGO;
     return dma_addr;
 }
 bool memprint( int* addr, u32 start, u32 range){
@@ -165,9 +164,9 @@ int main() {
         
     }
     
-    void* sram_base = virtual_map( virtual_base , SRAM_BASE);
-    void* dma0_base = virtual_map( virtual_base  ,DMA_0_BASE);
-    void* dma1_base = virtual_map( virtual_base  ,DMA_1_BASE);
+    u32* sram_base = virtual_map( virtual_base , (void*)SRAM_BASE);
+    u32* dma0_base = virtual_map( virtual_base  ,(void*)DMA_0_BASE);
+    u32* dma1_base = virtual_map( virtual_base  ,(void*)DMA_1_BASE);
 
     
     set_dmareg( dma0_base , STATUS, 0);
@@ -187,17 +186,17 @@ int main() {
                 printf("\n");
                 scanf("%d",&range);
                 if( test == 'y')
-                    dma_send(virtual_base,D2S, (u32)(test_arr+u32_s*start), (u32)(sram_base+u32_s*start), range);
+                    dma_send(virtual_base,D2S, (u32)(test_arr+u32_s*start), (u32)(DMA_0_WRITE_MASTER_ONCHIP_MEMORY2_0_BASE+start), range);
                 s= test=='y'? TRAND2S : STOP;
             case TRAND2S:
                 dma_addr = virtual_map ( virtual_base, (void*)D2S_BASE);
                 //printf("%0x \n", get_bit(get_dmareg(dma_addr,STATUS), BUSY));
-                if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring %d\n", get_dmareg(dma_addr,LENGTH));
+                if(get_bit(get_dmareg(dma_addr,STATUS), BUSY) )printf(" dram to sram transferring %0x\n", get_dmareg(dma_addr,LENGTH));
                 if(get_bit(get_dmareg(dma_addr,STATUS),DONE)  ){
                     printf("check\n");
                     s=TRANS2D;
                     set_dmareg(dma_addr, STATUS,0);
-                    dma_send(virtual_base,S2D, (u32)(sram_base+u32_s*start), (u32)(test_arr+u32_s*start), range);
+                    dma_send(virtual_base,S2D, (u32)(DMA_1_READ_MASTER_ONCHIP_MEMORY2_0_BASE+start), (u32)(test_arr+u32_s*start), range);
                 }
                 break;
             case TRANS2D:
